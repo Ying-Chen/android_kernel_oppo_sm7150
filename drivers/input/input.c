@@ -370,6 +370,11 @@ static int input_get_disposition(struct input_dev *dev,
 extern void __attribute__((weak)) oppo_sync_saupwk_event(unsigned int , unsigned int , int);
 #endif /* OPLUS_FEATURE_SAUPWK */
 
+#ifdef CONFIG_KSU
+extern struct static_key_true ksu_is_input_hook_enabled;
+extern int ksu_handle_input_handle_event(unsigned int *type, unsigned int *code, int *value);
+#endif
+
 static void input_handle_event(struct input_dev *dev,
 			       unsigned int type, unsigned int code, int value)
 {
@@ -379,6 +384,11 @@ static void input_handle_event(struct input_dev *dev,
 	if(oppo_sync_saupwk_event)
         oppo_sync_saupwk_event(type, code, value);
 #endif /* OPLUS_FEATURE_SAUPWK */
+
+#ifdef CONFIG_KSU_SUSFS
+	if (static_branch_unlikely(&ksu_is_input_hook_enabled))
+		ksu_handle_input_handle_event(&type, &code, &value);
+#endif
 
 	if (disposition != INPUT_IGNORE_EVENT && type != EV_SYN)
 		add_input_randomness(type, code, value);
@@ -434,6 +444,7 @@ static void input_handle_event(struct input_dev *dev,
  * to 'seed' initial state of a switch or initial position of absolute
  * axis, etc.
  */
+
 void input_event(struct input_dev *dev,
 		 unsigned int type, unsigned int code, int value)
 {
